@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Generate Figure 2: a two-panel forest plot with publication styling."""
+"""Generate Figure 2: a two-panel forest plot with publication styling.
+
+Panel A: fully adjusted Firth penalized logistic regression estimates for
+all-cause death within 28 days, 3 months, and 6 months (complete cases).
+Panel B: sensitivity analyses for the 28-day endpoint (unadjusted, multiple
+imputation, stabilized IPTW, and exclusion of hospital stays < 3 days).
+"""
 
 from pathlib import Path
 
@@ -7,6 +13,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 
 from figure_style import GREY, INK, set_sci_style
 
@@ -22,29 +29,55 @@ panel_a = [
 
 panel_b = [
     ("Unadjusted", 51.89, 23.41, 125.17, 1997, 28),
+    ("Multiple imputation", 46.44, 14.88, 144.95, 1997, 28),
     ("Stabilized IPTW", 15.13, 5.39, 42.48, 1867, 25),
     ("Excluding stay <3 days", 17.87, 3.83, 95.50, 1792, 12),
 ]
 
+PANELS = [
+    (
+        "A. Adjusted all-cause mortality outcomes",
+        "Adjusted OR (95% CI)",
+        "Adjusted odds ratio (95% CI; log scale)",
+        panel_a,
+    ),
+    (
+        "B. Sensitivity analyses for 28-day death",
+        "OR (95% CI)",
+        "Odds ratio (95% CI; log scale)",
+        panel_b,
+    ),
+]
 
-fig, axes = plt.subplots(2, 1, figsize=(9.8, 5.7), dpi=300)
-fig.subplots_adjust(left=0.24, right=0.60, top=0.92, bottom=0.11, hspace=1.05)
+TOP = 2.5
+STEP = 1.2
+TICKS = [0.5, 1, 2, 5, 10, 20, 50, 100, 200]
 
-for ax, title, rows in zip(
-    axes,
-    ("A. Adjusted all-cause mortality outcomes", "B. Sensitivity analyses for 28-day death"),
-    (panel_a, panel_b),
-):
+fig = plt.figure(figsize=(9.8, 6.9), dpi=300)
+grid = GridSpec(
+    2,
+    1,
+    figure=fig,
+    height_ratios=[len(rows) for _, _, _, rows in PANELS],
+    left=0.24,
+    right=0.60,
+    top=0.94,
+    bottom=0.10,
+    hspace=0.62,
+)
+
+for index, (title, column_header, xlabel, rows) in enumerate(PANELS):
+    ax = fig.add_subplot(grid[index])
     ax.set_xscale("log")
     ax.set_xlim(0.5, 320)
-    ax.set_ylim(-0.75, 3.55)
+    ax.set_ylim(TOP - (len(rows) - 1) * STEP - 0.95, TOP + 1.05)
     ax.set_title(title, loc="left", fontsize=9.5, pad=10)
     ax.axvline(1.0, color=GREY, linewidth=0.7, linestyle=(0, (4, 2.5)), zorder=1)
 
     ax.text(
         1.02,
-        3.12,
-        "Adjusted OR (95% CI)",
+        TOP + 0.8,
+        column_header,
         ha="left",
         va="center",
         fontsize=8.5,
@@ -54,7 +87,7 @@ for ax, title, rows in zip(
     )
 
     for i, (label, or_v, lo, hi, n_row, events_row) in enumerate(rows):
-        y = 2.4 - i * 1.2
+        y = TOP - i * STEP
         lower_err = or_v - lo
         upper_err = hi - or_v
         ax.errorbar(
@@ -112,14 +145,12 @@ for ax, title, rows in zip(
         )
 
     ax.set_yticks([])
-    ax.set_xticks([0.5, 1, 2, 5, 10, 20, 50, 100, 200])
-    ax.set_xticklabels(["0.5", "1", "2", "5", "10", "20", "50", "100", "200"])
-    ax.tick_params(axis="x", length=3)
+    ax.set_xticks(TICKS)
+    ax.set_xticklabels([f"{t:g}" for t in TICKS])
+    ax.tick_params(axis="x", length=3, labelsize=8)
+    ax.set_xlabel(xlabel, fontsize=8.5)
     for spine in ("top", "right", "left"):
         ax.spines[spine].set_visible(False)
-
-axes[0].tick_params(axis="x", labelbottom=False)
-axes[1].set_xlabel("Adjusted odds ratio (95% CI; log scale)")
 
 fig.savefig(OUT / "07_Figure2_ForestPlot.png", dpi=300, bbox_inches="tight")
 fig.savefig(OUT / "07_Figure2_ForestPlot.pdf", bbox_inches="tight")
