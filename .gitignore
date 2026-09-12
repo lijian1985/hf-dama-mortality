@@ -1,0 +1,25 @@
+# Data (not redistributed - see README)
+HF.csv
+HF_variables.csv
+*.csv
+
+# Generated outputs
+DAMA_formal_results.md
+DAMA_revision_results.md
+*.png
+*.pdf
+*.docx
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
